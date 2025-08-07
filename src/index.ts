@@ -10,6 +10,21 @@ import {
 import { promises as fs } from "fs";
 import * as path from "path";
 import { execSync } from "child_process";
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+// Get the directory where this script is located
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Use CODE_PATH environment variable if set, otherwise default to parent of parent (since we're in dist/)
+const getCodePath = () => {
+  if (process.env.CODE_PATH) {
+    return process.env.CODE_PATH;
+  }
+  // We're in dist/, so go up two levels to get to parent of project
+  return path.dirname(path.dirname(__dirname));
+};
 
 interface McpTool {
   name: string;
@@ -24,7 +39,7 @@ interface McpTool {
 }
 
 class McpToolsRegistry {
-  private baseDir = "/Users/bard/Code";
+  private baseDir = getCodePath();
   private configPath = path.join(
     process.env.HOME || "",
     "Library/Application Support/Claude/claude_desktop_config.json"
@@ -231,7 +246,7 @@ class McpToolsRegistry {
 const server = new Server(
   {
     name: "mcp-tools-registry",
-    version: "1.0.0",
+    version: "1.1.0",
   },
   {
     capabilities: {
@@ -362,10 +377,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "registry_info": {
-        const tool = await registry.getToolInfo(args.tool);
+        const tool = await registry.getToolInfo(args?.tool as string);
         
         if (!tool) {
-          throw new Error(`Tool ${args.tool} not found`);
+          throw new Error(`Tool ${args?.tool as string} not found`);
         }
 
         return {
@@ -379,7 +394,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "registry_config_snippet": {
-        const snippet = await registry.generateConfigSnippet(args.tool);
+        const snippet = await registry.generateConfigSnippet(args?.tool as string);
         
         return {
           content: [
@@ -392,7 +407,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case "registry_build": {
-        const result = await registry.buildTool(args.tool);
+        const result = await registry.buildTool(args?.tool as string);
         
         return {
           content: [

@@ -1,6 +1,13 @@
 # MCP Tools Registry
 
-A central registry of all MCP (Model Context Protocol) tools created for this system.
+A central registry of all MCP tools with configurable code directory.
+
+## Configuration
+
+The registry uses the `CODE_PATH` environment variable to determine where to look for MCP tools. If not set, it defaults to the parent directory of where this tool is installed.
+
+**Environment Variables:**
+- `CODE_PATH` (optional): Path to your code directory. Defaults to parent directory of this project.
 
 ## 📋 Active MCP Tools
 
@@ -58,6 +65,13 @@ Add tools to your Claude configuration (`claude_desktop_config.json`):
 ```json
 {
   "mcpServers": {
+    "tools-registry": {
+      "command": "node",
+      "args": ["/Users/bard/Code/mcp-tools-registry/dist/index.js"],
+      "env": {
+        "CODE_PATH": "/Users/bard/Code"
+      }
+    },
     "brain-manager": {
       "command": "node",
       "args": ["/Users/bard/Code/mcp-brain-manager/dist/index.js"]
@@ -73,6 +87,30 @@ Add tools to your Claude configuration (`claude_desktop_config.json`):
     "smalledit": {
       "command": "node",
       "args": ["/Users/bard/Code/mcp-smalledit/dist/index.js"]
+    }
+  }
+}
+```
+
+**Example configurations:**
+
+```json
+// Use default (parent directory)
+{
+  "tools-registry": {
+    "command": "node",
+    "args": ["/Users/bard/Code/mcp-tools-registry/dist/index.js"],
+    "env": {}
+  }
+}
+
+// Custom code path
+{
+  "tools-registry": {
+    "command": "node",
+    "args": ["/Users/bard/Code/mcp-tools-registry/dist/index.js"],
+    "env": {
+      "CODE_PATH": "/Users/bard/Projects"
     }
   }
 }
