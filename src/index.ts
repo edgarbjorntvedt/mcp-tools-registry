@@ -9,6 +9,7 @@ import {
 
 import { promises as fs } from "fs";
 import * as path from "path";
+import * as os from "os";
 import { execSync } from "child_process";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -40,10 +41,29 @@ interface McpTool {
 
 class McpToolsRegistry {
   private baseDir = getCodePath();
-  private configPath = path.join(
-    process.env.HOME || "",
-    "Library/Application Support/Claude/claude_desktop_config.json"
-  );
+  private configPath = this.getClaudeConfigPath();
+
+  private getClaudeConfigPath(): string {
+    // Use environment variable if set
+    if (process.env.CLAUDE_CONFIG_PATH) {
+      return process.env.CLAUDE_CONFIG_PATH;
+    }
+
+    const homeDir = os.homedir();
+    
+    // Platform-specific defaults
+    if (process.platform === "darwin") {
+      // macOS
+      return path.join(homeDir, "Library/Application Support/Claude/claude_desktop_config.json");
+    } else if (process.platform === "win32") {
+      // Windows
+      const appData = process.env.APPDATA || path.join(homeDir, "AppData/Roaming");
+      return path.join(appData, "Claude/claude_desktop_config.json");
+    } else {
+      // Linux and other Unix-like systems
+      return path.join(homeDir, ".config/Claude/claude_desktop_config.json");
+    }
+  }
 
   async discoverTools(): Promise<McpTool[]> {
     const tools: McpTool[] = [];
@@ -211,11 +231,24 @@ class McpToolsRegistry {
       throw new Error(`Tool ${toolName} not found`);
     }
 
+    // Read package.json to get the actual main entry point
+    let mainEntry = "dist/index.js"; // default fallback
+    try {
+      const packageJsonPath = path.join(tool.path, "package.json");
+      const packageData = await fs.readFile(packageJsonPath, "utf-8");
+      const packageJson = JSON.parse(packageData);
+      if (packageJson.main) {
+        mainEntry = packageJson.main;
+      }
+    } catch (error) {
+      // Use default if package.json can't be read
+    }
+
     const shortName = tool.name.replace("mcp-", "");
     const config = {
       [shortName]: {
         command: "node",
-        args: [path.join(tool.path, "dist", "index.js")],
+        args: [path.join(tool.path, mainEntry)],
       },
     };
 
